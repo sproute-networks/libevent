@@ -4150,17 +4150,25 @@ evdns_base_parse_hosts_line(struct evdns_base *base, char *line)
 			*hash = '\0';
 		}
 
-		namelen = strlen(hostname);
+		TAILQ_FOREACH(he, &base->hostsdb, next) {
+			if (strcmp(he->hostname, hostname) == 0) {
+				break;
+			}
+		}
 
-		he = mm_calloc(1, sizeof(struct hosts_entry)+namelen);
-		if (!he)
-			return -1;
-		EVUTIL_ASSERT(socklen <= (int)sizeof(he->addr));
-		memcpy(&he->addr, &ss, socklen);
-		memcpy(he->hostname, hostname, namelen+1);
-		he->addrlen = socklen;
+		if (!he) {
+			namelen = strlen(hostname);
 
-		TAILQ_INSERT_TAIL(&base->hostsdb, he, next);
+			he = mm_calloc(1, sizeof(struct hosts_entry)+namelen);
+			if (!he)
+				return -1;
+			EVUTIL_ASSERT(socklen <= (int)sizeof(he->addr));
+			memcpy(&he->addr, &ss, socklen);
+			memcpy(he->hostname, hostname, namelen+1);
+			he->addrlen = socklen;
+
+			TAILQ_INSERT_TAIL(&base->hostsdb, he, next);
+		}
 
 		if (hash)
 			return 0;
