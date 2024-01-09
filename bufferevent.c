@@ -736,6 +736,10 @@ bufferevent_finalize_cb_(struct event_callback *evcb, void *arg_)
 	/* Clean up the shared info */
 	if (bufev->be_ops->destruct)
 		bufev->be_ops->destruct(bufev);
+	if (bufev_private->dns_request) {
+		evutil_getaddrinfo_cancel_async_(bufev_private->dns_request);
+		bufev_private->dns_request = NULL;
+	}
 
 	/* XXX what happens if refcnt for these buffers is > 1?
 	 * The buffers can share a lock with this bufferevent object,
@@ -847,10 +851,16 @@ bufferevent_setfd(struct bufferevent *bev, evutil_socket_t fd)
 {
 	union bufferevent_ctrl_data d;
 	int res = -1;
+	struct bufferevent_private *bev_p =
+		EVUTIL_UPCAST(bev, struct bufferevent_private, bev);
 	d.fd = fd;
 	BEV_LOCK(bev);
 	if (bev->be_ops->ctrl)
 		res = bev->be_ops->ctrl(bev, BEV_CTRL_SET_FD, &d);
+	if (bev_p->dns_request) {
+		evutil_getaddrinfo_cancel_async_(bev_p->dns_request);
+		bev_p->dns_request = NULL;
+	}
 	BEV_UNLOCK(bev);
 	return res;
 }

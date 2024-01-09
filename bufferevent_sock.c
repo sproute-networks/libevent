@@ -613,8 +613,6 @@ be_socket_destruct(struct bufferevent *bufev)
 
 	if ((bufev_p->options & BEV_OPT_CLOSE_ON_FREE) && fd >= 0)
 		EVUTIL_CLOSESOCKET(fd);
-
-	evutil_getaddrinfo_cancel_async_(bufev_p->dns_request);
 }
 
 static int
@@ -628,9 +626,6 @@ be_socket_flush(struct bufferevent *bev, short iotype,
 static void
 be_socket_setfd(struct bufferevent *bufev, evutil_socket_t fd)
 {
-	struct bufferevent_private *bufev_p =
-	    EVUTIL_UPCAST(bufev, struct bufferevent_private, bev);
-
 	BEV_LOCK(bufev);
 	EVUTIL_ASSERT(bufev->be_ops == &bufferevent_ops_socket);
 
@@ -647,8 +642,6 @@ be_socket_setfd(struct bufferevent *bufev, evutil_socket_t fd)
 
 	if (fd >= 0)
 		bufferevent_enable(bufev, bufev->enabled);
-
-	evutil_getaddrinfo_cancel_async_(bufev_p->dns_request);
 
 	BEV_UNLOCK(bufev);
 }
